@@ -1,13 +1,19 @@
 import socket
 import threading
-from geopy import geocoders # $ pip  install geopy
-import calendar
-from datetime import datetime
-import pytz # $ pip install pytz
 import pip
 
 def install(name):
     pip.main(['install',name])
+
+install('geopy')
+install('pytz')
+
+from geopy import geocoders # $ pip  install geopy
+import calendar
+from datetime import datetime
+import pytz # $ pip install pytz
+
+
 
 def get_ip():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -33,8 +39,7 @@ def getTimePais(pais):
     except ValueError:
         return "  Hora sin poder consultar"
 
-install('geopy')
-install('pytz')
+
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 ip = get_ip()
 port = 1235
