@@ -1,6 +1,9 @@
 import socket
 import threading
 import pip
+import os
+import pathlib
+import sys
 
 def install(name):
     pip.main(['install',name])
@@ -35,21 +38,23 @@ def getTimePais(pais):
         print(timezone.zone)
         now = datetime.now(pytz.timezone(timezone.zone))  # you could pass `timezone` object here
         print (now)
-        return now
+        return now, timezone.zone
     except ValueError:
         return "  Hora sin poder consultar"
 
 
+pathlib.Path('Files').mkdir(parents=True, exist_ok=True)
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 ip = get_ip()
 port = 1235
+buffer = 1024
 address = (ip, port)
 server.bind(address)
 
 def listen_to_client(server_client, server_address):
     print("Got Connection from ", server_address[0], ":", server_address[1])
     while True:
-        data = server_client.recv(1024).decode("utf-8", "strict")
+        data = server_client.recv(buffer).decode("utf-8", "strict")
         print("Received ", data, " from client")
         print("   Processing Data")
 
@@ -57,6 +62,28 @@ def listen_to_client(server_client, server_address):
         if data == "hello":
             server_client.send(b"Hello Client")
             print("   Processing done. \n Reply sent")
+
+        elif data == "sendFile":
+            filename = server_client.recv(buffer).decode("utf-8", "strict")
+            print("   Filename: "+filename)
+
+            file = open('Files/' + filename, 'wb')
+            print("  Receiving....")
+            size = int(server_client.recv(buffer).decode("utf-8", "strict"))
+            data = server_client.recv(size)
+            file.write(data)
+            file.close()
+            print("  Done Receiving")
+            server_client.send(b'Thank you for connecting')
+
+        elif data == "listArch":
+            file_list = os.listdir("Files/")
+            print(file_list)
+            string_to_send = ""
+            for s in file_list:
+                string_to_send += "\n"+s
+
+            server_client.send(string_to_send.encode("utf-8", "strict"))
 
         elif data == "nombreHost":
             server_client.send(socket.gethostname().encode("utf-8", "strict"))
@@ -72,7 +99,8 @@ def listen_to_client(server_client, server_address):
             print("  Cantidad de Procesos enviados")
 
         elif "hora " in data:
-            time = getTimePais(data[5:])
+            time, zone = getTimePais(data[5:])
+            server_client.send(zone.encode("utf-8", "strict"))
             server_client.send(str(time).encode("utf-8", "strict"))
             print("  Hora Enviada")
 
